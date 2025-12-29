@@ -62,8 +62,9 @@
       </div>
 
       <div v-else-if="budgetStore.budgetData" class="space-y-6">
+
         <div v-if="!searchQuery"
-          class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 to-brand-500 text-white shadow-xl shadow-brand-500/20 p-6 transition-all duration-500">
+          class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-600 to-pink-400 text-white shadow-xl shadow-brand-500/20 p-6 transition-all duration-500">
           <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
           <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 rounded-full bg-white/10 blur-xl"></div>
 
@@ -102,6 +103,29 @@
           </div>
         </div>
 
+        <div v-if="categorySummary.length > 0 && !searchQuery" class="animate-fade-in-up">
+          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">
+            Ringkasan Kategori
+          </h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div v-for="cat in categorySummary" :key="cat.name"
+              class="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate w-2/3" :title="cat.name">{{
+                  cat.name }}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-md font-bold"
+                  :class="cat.type === 'pemasukan' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+                  {{ cat.count }}x
+                </span>
+              </div>
+              <p class="font-bold text-sm"
+                :class="cat.type === 'pemasukan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-white'">
+                {{ formatRupiahShort(cat.total) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div v-for="(items, category) in filteredBudgetDetails" :key="category" class="animate-fade-in-up">
           <h3
             class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1 flex items-center justify-between">
@@ -135,7 +159,12 @@
                 <div class="overflow-hidden">
                   <p class="font-semibold text-sm text-gray-800 dark:text-white truncate"
                     v-html="highlightText(item.nama_item)"></p>
-                  <p class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</p>
+                  <div class="flex items-center gap-2">
+                    <p class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</p>
+                    <span v-if="item.sumber_dana"
+                      class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500">{{
+                        item.sumber_dana }}</span>
+                  </div>
                 </div>
               </div>
 
@@ -225,6 +254,31 @@
 
             <div class="space-y-2">
               <label class="block text-xs font-medium text-gray-700 dark:text-gray-400">
+                Sumber Dana
+              </label>
+
+              <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button v-for="src in uniqueSources" :key="src" type="button" @click="form.sumber_dana = src"
+                  class="whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                  :class="form.sumber_dana === src
+                    ? 'bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'">
+                  {{ src }}
+                </button>
+              </div>
+
+              <div class="relative">
+                <input v-model="form.sumber_dana" type="text" list="source-suggestions"
+                  placeholder="Cth: Tunai, BCA, GoPay..." required
+                  class="w-full px-4 py-3 text-sm border-gray-200 bg-gray-50 rounded-xl dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:ring-brand-500 focus:border-brand-500" />
+                <datalist id="source-suggestions">
+                  <option v-for="src in uniqueSources" :key="src" :value="src"></option>
+                </datalist>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-400">
                 Kategori
               </label>
 
@@ -283,37 +337,74 @@ const searchQuery = ref('')
 // State Form
 const form = reactive({
   kategori: '',
+  sumber_dana: '', // Added
   nama_item: '',
   jumlah: null as number | null,
   jenis: 'pengeluaran'
 })
 
-// === LOGIC KATEGORI DINAMIS ===
-// 1. Kategori Default (untuk pengguna baru yang belum ada data)
-const defaultCategories = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Gaji', 'Hiburan', 'Kesehatan']
-
-// 2. Computed Property untuk mengambil kategori unik
-const uniqueCategories = computed(() => {
-  // Ambil data detail dari store
+// === LOGIC SUMBER DANA DINAMIS (NEW) ===
+const defaultSources = ['Tunai', 'ShopeePay']
+const uniqueSources = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
 
-  // Ambil keys (nama kategori) dari object detail
+  // Ambil semua item dari semua kategori, lalu ambil field sumber_dana
+  const allItems = Object.values(data).flat() as any[]
+  const existingSources = allItems
+    .map(item => item.sumber_dana)
+    .filter(val => val) // filter null/empty
+
+  const combined = [...defaultSources, ...existingSources]
+  return [...new Set(combined)].sort()
+})
+
+// === LOGIC REKAPAN KATEGORI (NEW) ===
+const categorySummary = computed(() => {
+  const data = budgetStore.budgetData?.detail || {}
+  const result = []
+
+  // Loop setiap kategori di data
+  for (const [categoryName, items] of Object.entries(data)) {
+    const itemList = items as any[]
+    if (itemList.length === 0) continue
+
+    // Hitung total
+    let total = 0
+    let type = 'pengeluaran' // default bias visual
+
+    // Cek mayoritas jenis (meskipun biasanya kategori spesifik per jenis)
+    // dan hitung total absolute
+    itemList.forEach(item => {
+      total += Number(item.jumlah)
+      type = item.jenis // ambil jenis dari item terakhir (asumsi konsisten per kategori)
+    })
+
+    result.push({
+      name: categoryName,
+      total: total,
+      count: itemList.length,
+      type: type
+    })
+  }
+
+  // Sort berdasarkan total terbesar
+  return result.sort((a, b) => b.total - a.total)
+})
+
+// === LOGIC KATEGORI DINAMIS ===
+const defaultCategories = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Gaji', 'Hiburan', 'Kesehatan']
+const uniqueCategories = computed(() => {
+  const data = budgetStore.budgetData?.detail || {}
   const existingKeys = Object.keys(data)
-
-  // Gabungkan default + yang ada di database
   const combined = [...defaultCategories, ...existingKeys]
-
-  // Hapus duplikat menggunakan Set dan sort alfabetis
   return [...new Set(combined)].sort()
 })
 
 // === LOGIC INPUT RUPIAH ===
 const displayJumlah = ref('')
-
 const handleNominalInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const value = target.value.replace(/\D/g, '')
-
   if (value) {
     form.jumlah = parseInt(value)
     displayJumlah.value = new Intl.NumberFormat('id-ID').format(parseInt(value))
@@ -355,7 +446,8 @@ const filteredBudgetDetails = computed(() => {
   for (const [category, items] of Object.entries(data)) {
     const filteredItems = (items as any[]).filter(item =>
       item.nama_item.toLowerCase().includes(query) ||
-      item.kategori.toLowerCase().includes(query)
+      item.kategori.toLowerCase().includes(query) ||
+      (item.sumber_dana && item.sumber_dana.toLowerCase().includes(query)) // Search support source
     )
     if (filteredItems.length > 0) {
       result[category] = filteredItems
@@ -397,6 +489,7 @@ const applyFilter = () => {
 
 const openModal = () => {
   form.kategori = ''
+  form.sumber_dana = ''
   form.nama_item = ''
   form.jumlah = null
   form.jenis = 'pengeluaran'
@@ -412,9 +505,9 @@ const submitForm = async () => {
   if (!form.jumlah) return
   isSubmitting.value = true
   try {
-    // Kategori otomatis diambil dari form.kategori (baik diklik dari chips atau diketik manual)
     await budgetStore.addEntry({
-      kategori: form.kategori, // ini string biasa, jadi user bebas isi
+      kategori: form.kategori,
+      sumber_dana: form.sumber_dana,
       nama_item: form.nama_item,
       jumlah: form.jumlah,
       jenis: form.jenis
