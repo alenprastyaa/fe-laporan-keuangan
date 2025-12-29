@@ -4,6 +4,8 @@
       class="px-5 pt-6 pb-2 bg-white dark:bg-gray-900 sticky top-0 z-20 shadow-sm border-b border-gray-100 dark:border-gray-800 transition-all duration-300">
 
       <div class="flex items-center justify-between mb-4">
+        <img class="w-20 rounded-2xl" src="https://i.pinimg.com/736x/d6/94/de/d694deb596d8f2e7166c2c1bcc3c9c6a.jpg"
+          alt="">
         <div>
           <h2 class="text-xl font-bold text-gray-800 dark:text-white">
             Dompet Rindah
@@ -11,6 +13,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400">
             Overview keuangan bulan ini
           </p>
+
         </div>
         <button @click="handleLogout"
           class="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-full transition-colors"
@@ -122,6 +125,41 @@
                 :class="cat.type === 'pemasukan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-white'">
                 {{ formatRupiahShort(cat.total) }}
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="sourceSummary.length > 0 && !searchQuery" class="animate-fade-in-up">
+          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">
+            Arus Kas Sumber Dana
+          </h3>
+          <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            <div v-for="src in sourceSummary" :key="src.name"
+              class="min-w-[140px] bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between shrink-0">
+
+              <div class="flex items-start justify-between mb-3">
+                <div class="p-1.5 rounded-lg"
+                  :class="src.type === 'pemasukan' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-gray-100 dark:bg-gray-700 text-gray-500">
+                  {{ src.count }} Trx
+                </span>
+              </div>
+
+              <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate mb-0.5" :title="src.name">
+                  {{ src.name }}
+                </p>
+                <p class="font-bold text-sm flex items-center gap-1"
+                  :class="src.type === 'pemasukan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                  <span>{{ src.type === 'pemasukan' ? '+' : '-' }}</span>
+                  {{ formatRupiahShort(src.total) }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -334,49 +372,40 @@ const isSubmitting = ref(false)
 const monthContainer = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
 
-// State Form
 const form = reactive({
   kategori: '',
-  sumber_dana: '', // Added
+  sumber_dana: '',
   nama_item: '',
   jumlah: null as number | null,
   jenis: 'pengeluaran'
 })
 
-// === LOGIC SUMBER DANA DINAMIS (NEW) ===
 const defaultSources = ['Tunai', 'ShopeePay']
 const uniqueSources = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
-
-  // Ambil semua item dari semua kategori, lalu ambil field sumber_dana
   const allItems = Object.values(data).flat() as any[]
   const existingSources = allItems
     .map(item => item.sumber_dana)
-    .filter(val => val) // filter null/empty
+    .filter(val => val)
 
   const combined = [...defaultSources, ...existingSources]
   return [...new Set(combined)].sort()
 })
 
-// === LOGIC REKAPAN KATEGORI (NEW) ===
 const categorySummary = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
   const result = []
 
-  // Loop setiap kategori di data
   for (const [categoryName, items] of Object.entries(data)) {
     const itemList = items as any[]
     if (itemList.length === 0) continue
 
-    // Hitung total
     let total = 0
-    let type = 'pengeluaran' // default bias visual
+    let type = 'pengeluaran'
 
-    // Cek mayoritas jenis (meskipun biasanya kategori spesifik per jenis)
-    // dan hitung total absolute
     itemList.forEach(item => {
       total += Number(item.jumlah)
-      type = item.jenis // ambil jenis dari item terakhir (asumsi konsisten per kategori)
+      type = item.jenis
     })
 
     result.push({
@@ -387,11 +416,42 @@ const categorySummary = computed(() => {
     })
   }
 
-  // Sort berdasarkan total terbesar
   return result.sort((a, b) => b.total - a.total)
 })
 
-// === LOGIC KATEGORI DINAMIS ===
+const sourceSummary = computed(() => {
+  const data = budgetStore.budgetData?.detail || {}
+  const stats: Record<string, { balance: number; count: number }> = {}
+
+  const allItems = Object.values(data).flat() as any[]
+
+  allItems.forEach(item => {
+    const source = item.sumber_dana || 'Lainnya'
+
+    if (!stats[source]) {
+      stats[source] = { balance: 0, count: 0 }
+    }
+
+    stats[source].count += 1
+    const amount = Number(item.jumlah)
+
+    if (item.jenis === 'pemasukan') {
+      stats[source].balance += amount
+    } else {
+      stats[source].balance -= amount
+    }
+  })
+
+  return Object.entries(stats)
+    .map(([name, stat]) => ({
+      name,
+      count: stat.count,
+      type: stat.balance >= 0 ? 'pemasukan' : 'pengeluaran',
+      total: Math.abs(stat.balance)
+    }))
+    .sort((a, b) => b.total - a.total)
+})
+
 const defaultCategories = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Gaji', 'Hiburan', 'Kesehatan']
 const uniqueCategories = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
@@ -400,7 +460,6 @@ const uniqueCategories = computed(() => {
   return [...new Set(combined)].sort()
 })
 
-// === LOGIC INPUT RUPIAH ===
 const displayJumlah = ref('')
 const handleNominalInput = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -414,7 +473,6 @@ const handleNominalInput = (event: Event) => {
   }
 }
 
-// === LOGIKA DEFAULT WAKTU ===
 const currentDate = new Date()
 const selectedMonth = ref(currentDate.getMonth() + 1)
 const selectedYear = ref(currentDate.getFullYear())
@@ -422,7 +480,6 @@ const selectedYear = ref(currentDate.getFullYear())
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i)
 
-// Toast Configuration
 const Toast = Swal.mixin({
   toast: true,
   position: 'top-end',
@@ -435,7 +492,6 @@ const Toast = Swal.mixin({
   }
 })
 
-// Computed Search
 const filteredBudgetDetails = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
   if (!searchQuery.value) return data
@@ -447,7 +503,7 @@ const filteredBudgetDetails = computed(() => {
     const filteredItems = (items as any[]).filter(item =>
       item.nama_item.toLowerCase().includes(query) ||
       item.kategori.toLowerCase().includes(query) ||
-      (item.sumber_dana && item.sumber_dana.toLowerCase().includes(query)) // Search support source
+      (item.sumber_dana && item.sumber_dana.toLowerCase().includes(query))
     )
     if (filteredItems.length > 0) {
       result[category] = filteredItems
@@ -462,7 +518,6 @@ const highlightText = (text: string) => {
   return text.replace(regex, '<span class="bg-yellow-200 dark:bg-yellow-600/50 text-gray-900 dark:text-white font-bold px-0.5 rounded">$1</span>')
 }
 
-// Formatters
 const formatDateTime = (dateString: string) => {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -482,7 +537,6 @@ const formatRupiahShort = (number: number) => {
   return new Intl.NumberFormat('id-ID').format(number)
 }
 
-// Logic Fetch Data
 const applyFilter = () => {
   budgetStore.fetchBudget(selectedMonth.value, selectedYear.value)
 }
@@ -570,9 +624,30 @@ const handleLogout = async () => {
     setTimeout(() => { router.push('/signin') }, 500)
   }
 }
-
 onMounted(async () => {
-  applyFilter()
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.replace('/signin')
+    return
+  }
+  await applyFilter()
+  if (budgetStore.error) {
+    const errorMsg = budgetStore.error.toLowerCase()
+    if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || errorMsg.includes('token') || errorMsg.includes('expired')) {
+      localStorage.removeItem('token')
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Sesi Berakhir',
+        text: 'Silakan login kembali untuk melanjutkan.',
+        timer: 2000,
+        showConfirmButton: false
+      })
+
+      router.replace('/signin')
+      return
+    }
+  }
+
   await nextTick()
   if (monthContainer.value) {
     const activeButton = monthContainer.value.querySelector('.bg-brand-500')
