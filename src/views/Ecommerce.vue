@@ -630,7 +630,7 @@ onMounted(async () => {
     router.replace('/signin')
     return
   }
-  await applyFilter()
+  applyFilter()
   if (budgetStore.error) {
     const errorMsg = budgetStore.error.toLowerCase()
     if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || errorMsg.includes('token') || errorMsg.includes('expired')) {
