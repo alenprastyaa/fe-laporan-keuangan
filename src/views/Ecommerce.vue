@@ -3,23 +3,29 @@
     <div
       class="px-5 pt-6 pb-2 bg-white dark:bg-gray-900 sticky top-0 z-20 shadow-sm border-b border-gray-100 dark:border-gray-800 transition-all duration-300">
 
-      <div class="flex items-center justify-between mb-4">
-        <img class="w-20 rounded-2xl" src="https://i.pinimg.com/736x/d6/94/de/d694deb596d8f2e7166c2c1bcc3c9c6a.jpg"
-          alt="">
-        <div>
-          <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-            Dompet Rindah
-          </h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            Overview keuangan bulan ini
-          </p>
+      <div class="flex items-center justify-between gap-4 p-4 mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <!-- Logo Section -->
+        <div class="flex items-center gap-3 flex-1">
+          <img class="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+            src="https://i.pinimg.com/736x/d6/94/de/d694deb596d8f2e7166c2c1bcc3c9c6a.jpg" alt="Dompet Kita Logo" />
 
+          <!-- App Info -->
+          <div class="min-w-0">
+            <h2 class="text-lg font-bold text-gray-800 dark:text-white">
+              Dompet Kita
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+              aplikasi laporan harian simpel !
+            </p>
+          </div>
         </div>
+
+        <!-- Logout Button -->
         <button @click="handleLogout"
-          class="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-full transition-colors"
-          title="Keluar">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          class="p-2.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-full transition-colors duration-200 flex-shrink-0"
+          title="Keluar" aria-label="Tombol keluar">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
         </button>
@@ -80,24 +86,12 @@
             <div class="grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
               <div>
                 <div class="flex items-center gap-1.5 text-brand-100 mb-1">
-                  <div class="p-1 bg-emerald-500/20 rounded-full">
-                    <svg class="w-3 h-3 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </div>
                   <span class="text-xs">Pemasukan</span>
                 </div>
                 <p class="font-semibold text-sm">{{ formatRupiah(budgetStore.budgetData.total_pemasukan) }}</p>
               </div>
               <div>
                 <div class="flex items-center gap-1.5 text-brand-100 mb-1">
-                  <div class="p-1 bg-rose-500/20 rounded-full">
-                    <svg class="w-3 h-3 text-rose-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                  </div>
                   <span class="text-xs">Pengeluaran</span>
                 </div>
                 <p class="font-semibold text-sm">{{ formatRupiah(budgetStore.budgetData.total_pengeluaran) }}</p>
@@ -107,12 +101,15 @@
         </div>
 
         <div v-if="categorySummary.length > 0 && !searchQuery" class="animate-fade-in-up">
-          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">
-            Ringkasan Kategori
+          <h3
+            class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1 flex justify-between items-center">
+            <span>Ringkasan Kategori</span>
+            <span class="text-[10px] font-normal text-brand-500 bg-brand-50 px-2 py-0.5 rounded-full">Klik untuk
+              detail</span>
           </h3>
           <div class="grid grid-cols-2 gap-3">
-            <div v-for="cat in categorySummary" :key="cat.name"
-              class="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
+            <div v-for="cat in categorySummary" :key="cat.name" @click="openDetailCategory(cat.name)"
+              class="cursor-pointer bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-brand-200 transition-all active:scale-[0.98]">
               <div class="flex items-start justify-between mb-2">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate w-2/3" :title="cat.name">{{
                   cat.name }}</span>
@@ -164,74 +161,15 @@
           </div>
         </div>
 
-        <div v-for="(items, category) in filteredBudgetDetails" :key="category" class="animate-fade-in-up">
-          <h3
-            class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1 flex items-center justify-between">
-            {{ category }}
-            <span v-if="searchQuery" class="bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full text-[10px]">{{
-              items.length }} ditemukan</span>
-          </h3>
-
-          <div
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
-            <div v-for="item in items" :key="item.id"
-              class="flex items-center justify-between p-4 active:bg-gray-50 dark:active:bg-gray-700/50 transition group">
-
-              <div class="flex items-center gap-3.5">
-                <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-                  :class="item.jenis === 'pemasukan'
-                    ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'">
-                  <svg v-if="item.jenis === 'pemasukan'" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                  <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                  </svg>
-                </div>
-
-                <div class="overflow-hidden">
-                  <p class="font-semibold text-sm text-gray-800 dark:text-white truncate"
-                    v-html="highlightText(item.nama_item)"></p>
-                  <div class="flex items-center gap-2">
-                    <p class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</p>
-                    <span v-if="item.sumber_dana"
-                      class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500">{{
-                        item.sumber_dana }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="text-right pl-2 shrink-0">
-                <p class="font-bold text-sm"
-                  :class="item.jenis === 'pemasukan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
-                  {{ item.jenis === 'pemasukan' ? '+' : '-' }} {{ formatRupiahShort(item.jumlah) }}
-                </p>
-                <button @click="handleDelete(item.id)" class="text-xs text-blue-500">
-                  Hapus
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        <div v-if="Object.keys(filteredBudgetDetails).length === 0"
-          class="flex flex-col items-center justify-center py-12 text-center">
+        <div v-if="categorySummary.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
           <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
             <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" v-if="searchQuery" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" v-else />
+                d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
           </div>
           <p class="text-gray-500 dark:text-gray-400 text-sm">
-            {{ searchQuery ? `Tidak ada transaksi untuk "${searchQuery}"` : 'Belum ada transaksi bulan ini.' }}
+            Belum ada transaksi bulan ini.
           </p>
         </div>
       </div>
@@ -355,6 +293,78 @@
       </div>
     </div>
 
+    <div v-if="isDetailModalOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" @click="closeDetailModal"></div>
+
+      <div
+        class="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-transform duration-300 ease-out border-t border-gray-100 dark:border-gray-800 max-h-[85vh] overflow-hidden flex flex-col">
+
+        <div
+          class="px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0 bg-white dark:bg-gray-900 rounded-t-3xl">
+          <div>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              {{ selectedDetailCategory }}
+            </h3>
+            <p class="text-xs text-gray-500">Detail transaksi kategori ini</p>
+          </div>
+          <button @click="closeDetailModal"
+            class="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:bg-gray-200 transition">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="overflow-y-auto p-0 no-scrollbar flex-1">
+          <div class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="item in selectedCategoryTransactions" :key="item.id"
+              class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group">
+
+              <div class="flex items-center gap-3.5 overflow-hidden">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" :class="item.jenis === 'pemasukan'
+                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                  : 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'">
+                  <svg v-if="item.jenis === 'pemasukan'" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                  <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </div>
+
+                <div class="overflow-hidden">
+                  <p class="font-semibold text-sm text-gray-800 dark:text-white truncate"
+                    v-html="highlightText(item.nama_item)"></p>
+                  <div class="flex items-center gap-2">
+                    <p class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</p>
+                    <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500">{{
+                      item.sumber_dana }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right pl-2 shrink-0">
+                <p class="font-bold text-sm"
+                  :class="item.jenis === 'pemasukan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                  {{ item.jenis === 'pemasukan' ? '+' : '-' }} {{ formatRupiahShort(item.jumlah) }}
+                </p>
+                <button @click="handleDelete(item.id)" class="text-xs text-rose-500 font-medium mt-1 hover:underline">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="selectedCategoryTransactions.length === 0" class="py-10 text-center">
+            <p class="text-sm text-gray-500">Tidak ada data ditemukan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -368,6 +378,10 @@ const budgetStore = useBudgetStore()
 const router = useRouter()
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
+
+// STATE UNTUK MODAL DETAIL
+const isDetailModalOpen = ref(false)
+const selectedDetailCategory = ref('')
 
 const monthContainer = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
@@ -492,6 +506,31 @@ const Toast = Swal.mixin({
   }
 })
 
+// COMPUTED UNTUK MODAL DETAIL
+const selectedCategoryTransactions = computed(() => {
+  const data = budgetStore.budgetData?.detail || {}
+  const items = data[selectedDetailCategory.value] || []
+
+  // Tetap terapkan search filter di dalam modal detail
+  if (!searchQuery.value) return items
+
+  const query = searchQuery.value.toLowerCase()
+  return items.filter((item: any) =>
+    item.nama_item.toLowerCase().includes(query) ||
+    (item.sumber_dana && item.sumber_dana.toLowerCase().includes(query))
+  )
+})
+
+// FUNCTION UNTUK MODAL DETAIL
+const openDetailCategory = (categoryName: string) => {
+  selectedDetailCategory.value = categoryName
+  isDetailModalOpen.value = true
+}
+
+const closeDetailModal = () => {
+  isDetailModalOpen.value = false
+}
+
 const filteredBudgetDetails = computed(() => {
   const data = budgetStore.budgetData?.detail || {}
   if (!searchQuery.value) return data
@@ -559,11 +598,12 @@ const submitForm = async () => {
   if (!form.jumlah) return
   isSubmitting.value = true
   try {
+    // FIX: Pastikan jumlah dikirim sebagai number (atasi error TS 'number | null')
     await budgetStore.addEntry({
       kategori: form.kategori,
       sumber_dana: form.sumber_dana,
       nama_item: form.nama_item,
-      jumlah: form.jumlah,
+      jumlah: form.jumlah as number,
       jenis: form.jenis
     })
 
@@ -599,6 +639,8 @@ const handleDelete = async (id: number) => {
     try {
       await budgetStore.deleteEntry(id)
       applyFilter()
+      // Jika list kategori kosong setelah delete, tutup modal detail (opsional)
+      // Tapi untuk UX lebih aman dibiarkan terbuka sampai user menutup
       Toast.fire({ icon: 'success', title: 'Data berhasil dihapus' })
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan saat menghapus data.' })
